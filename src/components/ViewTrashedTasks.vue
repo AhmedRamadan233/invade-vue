@@ -4,39 +4,7 @@
       <div class="col-lg-12">
         <div class="card card-primary card-outline shadow">
           <div class="card-header">
-            <div
-              class="d-flex justify-content-between align-items-center flex-wrap"
-            >
-              <form
-                id="search-form"
-                class="d-flex flex-wrap align-items-center"
-              >
-                <div class="form-group me-2 mb-2">
-                  <label for="title" class="visually-hidden"
-                    >Search by title</label
-                  >
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="title"
-                    placeholder="Search by title..."
-                    name="title"
-                    v-model="searchTitle"
-                    @input="fetchTasks"
-                  />
-                </div>
-              </form>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                @click="goToTrashedTasks"
-              >
-                View Trashed Tasks
-              </button>
-              <AddTaskComponent
-                @taskAdded="fetchTasks(pagination.current_page)"
-              />
-            </div>
+            <h3 class="card-title">Trashed Tasks</h3>
           </div>
           <div class="card-body">
             <table class="table table-bordered table-striped">
@@ -46,7 +14,7 @@
                   <th class="text-center">Title</th>
                   <th class="text-center">Description</th>
                   <th class="text-center">Status</th>
-                  <th class="text-center">Categories</th>
+                  <th class="text-center">Deleted At</th>
                   <th class="text-center">Action</th>
                 </tr>
               </thead>
@@ -55,33 +23,16 @@
                   <td class="text-center">{{ task.id }}</td>
                   <td class="text-center">{{ task.title }}</td>
                   <td class="text-center">{{ task.description }}</td>
+                  <td class="text-center">{{ task.status }}</td>
+                  <td class="text-center">{{ formatDate(task.deleted_at) }}</td>
                   <td class="text-center">
-                    <button
-                      :class="buttonClass(task.status)"
-                      @click="toggleStatus(task.id)"
-                    >
-                      {{ task.status === "pending" ? "Pending" : "Completed" }}
-                    </button>
-                  </td>
-                  <td class="text-center">
-                    <ul class="list-unstyled">
-                      <li
-                        v-for="category in task.categories"
-                        :key="category.id"
-                      >
-                        {{ category.name }}
-                      </li>
-                    </ul>
-                  </td>
-                  <td>
-                    <EditTaskComponent
+                    <restore-task-component
                       :task="task"
-                      @taskUpdated="fetchTasks(pagination.current_page)"
+                      @taskUpdated="fetchTasks"
                     />
-                    |
-                    <DeleteTaskComponent
+                    <force-delete-task-component
                       :task="task"
-                      @taskUpdated="fetchTasks(pagination.current_page)"
+                      @taskUpdated="fetchTasks"
                     />
                   </td>
                 </tr>
@@ -140,22 +91,18 @@
 </template>
 
 <script>
-import axiosInstance from "../axios"; // Use the axios instance
-import AddTaskComponent from "./AddTaskComponent";
-import EditTaskComponent from "./EditTaskComponent";
-import DeleteTaskComponent from "./DeleteTaskComponent";
-
+import axios from "../axios";
+import RestoreTaskComponent from "./RestoreTaskComponent.vue";
+import ForceDeleteTaskComponent from "./ForceDeleteTaskComponent.vue";
 export default {
-  name: "TaskComponent",
+  name: "ViewTrashedTasks",
   components: {
-    AddTaskComponent,
-    EditTaskComponent,
-    DeleteTaskComponent,
+    RestoreTaskComponent,
+    ForceDeleteTaskComponent,
   },
   data() {
     return {
       tasks: [],
-      searchTitle: "",
       pagination: {
         current_page: 1,
         last_page: 1,
@@ -163,7 +110,6 @@ export default {
         next_page_url: null,
         total: 0,
       },
-      isViewingTrashed: false, // New data property to track if viewing trashed tasks
     };
   },
   mounted() {
@@ -172,29 +118,22 @@ export default {
   methods: {
     async fetchTasks(page = 1) {
       try {
-        const url = this.isViewingTrashed ? "/tasks/trashed" : "/tasks";
-        const response = await axiosInstance.get(url, {
-          params: {
-            page,
-            title: this.searchTitle,
-          },
-        });
+        const response = await axios.get(
+          "http://localhost:8000/api/tasks/trashed",
+          {
+            params: {
+              page,
+            },
+          }
+        );
         this.tasks = response.data.data.data;
         this.pagination = response.data.data;
       } catch (error) {
-        console.error("Error fetching tasks:", error);
+        console.error("Error fetching trashed tasks:", error);
       }
     },
-    async toggleStatus(taskId) {
-      try {
-        await axiosInstance.post(`/tasks/toggle-status/${taskId}`);
-        this.fetchTasks(this.pagination.current_page);
-      } catch (error) {
-        console.error("Error toggling status:", error);
-      }
-    },
-    buttonClass(status) {
-      return status === "pending" ? "btn btn-success" : "btn btn-secondary";
+    formatDate(date) {
+      return new Date(date).toLocaleDateString();
     },
     changePage(page) {
       if (
@@ -204,10 +143,6 @@ export default {
       ) {
         this.fetchTasks(page);
       }
-    },
-
-    goToTrashedTasks() {
-      this.$router.push("/view-trashed-tasks");
     },
   },
 };

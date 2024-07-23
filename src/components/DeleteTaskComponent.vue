@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Button to open the modal -->
     <button
       type="button"
       class="btn btn-danger"
@@ -10,7 +9,6 @@
       Delete Task
     </button>
 
-    <!-- Modal -->
     <div
       class="modal fade"
       :id="`deleteTaskModal${task.id}`"
@@ -52,22 +50,21 @@
 
 <script>
 import { Modal } from "bootstrap";
-import axios from "axios";
-
+import axiosInstance from "../axios"; 
 export default {
   name: "DeleteTaskComponent",
   props: {
-    task: Object, // Expecting task object as a prop
+    task: Object, 
   },
   data() {
     return {
-      localTask: { ...this.task }, // Create a local copy of the task prop
+      localTask: { ...this.task }, 
     };
   },
   watch: {
     task: {
       handler(newTask) {
-        this.localTask = { ...newTask }; // Update local copy when the prop changes
+        this.localTask = { ...newTask };
       },
       deep: true,
     },
@@ -75,11 +72,8 @@ export default {
   methods: {
     async deleteTask() {
       try {
-        await axios.delete(
-          `http://localhost:8000/api/tasks/destroy/${this.localTask.id}`
-        );
+        await axiosInstance.delete(`/tasks/destroy/${this.localTask.id}`);
         this.$emit("taskUpdated");
-        // Close modal using Bootstrap's modal method
         const modalElement = document.getElementById(
           `deleteTaskModal${this.localTask.id}`
         );

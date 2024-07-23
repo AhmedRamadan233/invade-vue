@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Button to open the modal -->
     <button
       type="button"
       class="btn btn-primary"
@@ -10,7 +9,6 @@
       Edit Task
     </button>
 
-    <!-- Modal -->
     <div
       class="modal fade"
       :id="`editTaskModal${task.id}`"
@@ -34,7 +32,7 @@
               <!-- Hidden input for task ID -->
               <input type="hidden" v-model="localTask.id" />
 
-              <!-- Start title -->
+              <!-- Title -->
               <div class="mb-3">
                 <label for="title" class="form-label">Title</label>
                 <input
@@ -48,11 +46,10 @@
                   {{ errors.title }}
                 </div>
               </div>
-              <!-- End title -->
 
-              <!-- Start Descriptions -->
+              <!-- Description -->
               <div class="mb-3">
-                <label for="description" class="form-label">Descriptions</label>
+                <label for="description" class="form-label">Description</label>
                 <input
                   v-model="localTask.description"
                   type="text"
@@ -64,9 +61,8 @@
                   {{ errors.description }}
                 </div>
               </div>
-              <!-- End Descriptions -->
 
-              <!-- Start status -->
+              <!-- Status -->
               <div class="mb-3">
                 <label for="status" class="form-label">Status</label>
                 <select
@@ -81,7 +77,31 @@
                   {{ errors.status }}
                 </div>
               </div>
-              <!-- End status -->
+
+              <!-- Categories -->
+              <div class="mb-3">
+                <label for="categories" class="form-label">Categories</label>
+                <select
+                  v-model="localTask.categories"
+                  id="categories"
+                  class="form-select"
+                  multiple
+                >
+                  <template v-if="allCategories.length > 0">
+                    <option
+                      v-for="category in allCategories"
+                      :key="category.id"
+                      :value="category.id"
+                    >
+                      {{ category.name }}
+                    </option>
+                  </template>
+                  <option v-else disabled>No categories available</option>
+                </select>
+                <div v-if="errors.categories" class="invalid-feedback">
+                  {{ errors.categories }}
+                </div>
+              </div>
 
               <div class="modal-footer">
                 <button
@@ -103,23 +123,35 @@
 
 <script>
 import { Modal } from "bootstrap";
-import axios from "axios";
-
+import axiosInstance from "../axios";
 export default {
   name: "EditTaskComponent",
   props: {
-    task: Object, // Expecting task object as a prop
+    task: Object, 
   },
   data() {
     return {
-      localTask: { ...this.task }, // Create a local copy of the task prop
+      localTask: { ...this.task }, 
       errors: {},
+      allCategories: [], 
     };
+  },
+  async created() {
+    try {
+      const response = await axiosInstance.get("/categories");
+      if (response.data && response.data.data) {
+        this.allCategories = response.data.data.data; 
+      } else {
+        console.warn("Unexpected response format:", response);
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
   },
   watch: {
     task: {
       handler(newTask) {
-        this.localTask = { ...newTask }; // Update local copy when the prop changes
+        this.localTask = { ...newTask }; 
       },
       deep: true,
     },
@@ -127,15 +159,14 @@ export default {
   methods: {
     async submitForm() {
       try {
-        await axios.put("http://localhost:8000/api/tasks/update", {
-          id: this.localTask.id,
+        await axiosInstance.put(`/tasks/update`, {
+          id: this.localTask.id, 
           title: this.localTask.title,
           description: this.localTask.description,
           status: this.localTask.status,
+          categories: this.localTask.categories, 
         });
         this.$emit("taskUpdated");
-
-        // Close modal using Bootstrap's modal method
         const modalElement = document.getElementById(
           `editTaskModal${this.localTask.id}`
         );
@@ -152,10 +183,9 @@ export default {
       }
     },
     processErrors(errors) {
-      // Flatten the errors object
       const flattenedErrors = {};
       for (const [field, messages] of Object.entries(errors)) {
-        flattenedErrors[field] = messages.join(", "); // Combine all messages into a single string
+        flattenedErrors[field] = messages.join(", "); 
       }
       this.errors = flattenedErrors;
     },

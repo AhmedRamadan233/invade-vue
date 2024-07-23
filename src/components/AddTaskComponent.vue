@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Button to open the modal -->
     <button
       type="button"
       class="btn btn-primary"
@@ -10,7 +9,6 @@
       Add New Task
     </button>
 
-    <!-- Modal -->
     <div
       class="modal fade"
       id="customModal"
@@ -31,7 +29,7 @@
           </div>
           <div class="modal-body">
             <form @submit.prevent="submitForm">
-              <!-- Start title -->
+              <!-- Title -->
               <div class="mb-3">
                 <label for="title" class="form-label">Title</label>
                 <input
@@ -45,11 +43,9 @@
                   {{ errors.title }}
                 </div>
               </div>
-              <!-- End title -->
-
-              <!-- Start Descriptions -->
+              <!-- Description -->
               <div class="mb-3">
-                <label for="description" class="form-label">Descriptions</label>
+                <label for="description" class="form-label">Description</label>
                 <input
                   v-model="task.description"
                   type="text"
@@ -61,9 +57,7 @@
                   {{ errors.description }}
                 </div>
               </div>
-              <!-- End Descriptions -->
-
-              <!-- Start status -->
+              <!-- Status -->
               <div class="mb-3">
                 <label for="status" class="form-label">Status</label>
                 <select v-model="task.status" id="status" class="form-select">
@@ -74,8 +68,30 @@
                   {{ errors.status }}
                 </div>
               </div>
-              <!-- End status -->
-
+              <!-- Categories -->
+              <div class="mb-3">
+                <label for="categories" class="form-label">Categories</label>
+                <select
+                  v-model="task.categories"
+                  id="categories"
+                  class="form-select"
+                  multiple
+                >
+                  <template v-if="allCategories && allCategories.length > 0">
+                    <option
+                      v-for="category in allCategories"
+                      :key="category.id"
+                      :value="category.id"
+                    >
+                      {{ category.name }}
+                    </option>
+                  </template>
+                  <option v-else disabled>No categories available</option>
+                </select>
+                <div v-if="errors.categories" class="invalid-feedback">
+                  {{ errors.categories }}
+                </div>
+              </div>
               <div class="modal-footer">
                 <button
                   type="button"
@@ -96,7 +112,7 @@
 
 <script>
 import { Modal } from "bootstrap";
-import axios from "axios";
+import axiosInstance from "../axios"; 
 
 export default {
   name: "AddTaskComponent",
@@ -106,18 +122,32 @@ export default {
         title: "",
         description: "",
         status: "pending",
+        categories: [], 
       },
+      allCategories: [], 
       errors: {},
     };
+  },
+  async created() {
+    try {
+      const response = await axiosInstance.get("/categories");
+      if (response.data && response.data.data) {
+        this.allCategories = response.data.data.data; 
+        console.log(this.allCategories); 
+      } else {
+        console.warn("Unexpected response format:", response);
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
   },
   methods: {
     async submitForm() {
       try {
-        await axios.post("http://localhost:8000/api/tasks/store", this.task);
+        await axiosInstance.post("/tasks/store", this.task);
         this.resetForm();
         this.$emit("taskAdded");
 
-        // Close modal using Bootstrap's modal method
         const modalElement = document.getElementById("customModal");
         const modalInstance = Modal.getInstance(modalElement);
         if (modalInstance) {
@@ -128,14 +158,19 @@ export default {
       } catch (error) {
         if (error.response && error.response.status === 422) {
           this.processErrors(error.response.data.errors);
+        } else if (error.response && error.response.status === 401) {
+          console.error(
+            "Unauthorized: Please check your authentication credentials."
+          );
+        } else {
+          console.error("An unexpected error occurred:", error);
         }
       }
     },
     processErrors(errors) {
-      // Flatten the errors object
       const flattenedErrors = {};
       for (const [field, messages] of Object.entries(errors)) {
-        flattenedErrors[field] = messages.join(", "); // Combine all messages into a single string
+        flattenedErrors[field] = messages.join(", ");
       }
       this.errors = flattenedErrors;
     },
@@ -143,15 +178,9 @@ export default {
       this.task.title = "";
       this.task.description = "";
       this.task.status = "pending";
+      this.task.categories = [];
       this.errors = {};
     },
   },
 };
 </script>
-
-<style scoped>
-/* Remove custom modal styles; Bootstrap 5 already provides built-in styles */
-.invalid-feedback {
-  display: block;
-}
-</style>
