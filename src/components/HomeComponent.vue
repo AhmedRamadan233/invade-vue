@@ -21,6 +21,9 @@
           <li class="nav-item">
             <router-link class="nav-link" to="/tasks">Tasks</router-link>
           </li>
+          <li class="nav-item">
+            <router-link class="nav-link" to="/categories">Categories</router-link>
+          </li>
         </ul>
       </div>
       <button class="btn btn-outline-danger" @click="logout">Logout</button>
@@ -29,18 +32,18 @@
 </template>
 
 <script>
-import axios from "axios";
+import axiosInstance from "../axios"; // Import your custom axios instance
 
 export default {
   name: "HomeComponent",
   methods: {
     async logout() {
       try {
-        await axios.post('http://127.0.0.1:8000/api/logout');
-        localStorage.removeItem('token');
-        this.$router.push('/login'); 
+        await axiosInstance.post("/logout");
+        localStorage.removeItem("token");
+        this.$router.push("/login");
       } catch (error) {
-        console.error('Error logging out:', error);
+        console.error("Error logging out:", error);
       }
     },
   },

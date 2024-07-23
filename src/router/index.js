@@ -3,6 +3,7 @@ import TaskComponent from '../components/TaskComponent.vue';
 import HomeComponent from '../components/HomeComponent.vue';
 import LoginComponent from '../components/LoginComponent.vue';
 import ViewTrashedTasks from '../components/ViewTrashedTasks.vue';
+import CategoryComponent from '@/components/CategoryComponent.vue';
 
 
 const routes = [
@@ -26,6 +27,14 @@ const routes = [
     component: ViewTrashedTasks,
     meta: { title: 'ViewTrashed', requiresAuth: true },
   },
+
+  {
+    path: '/categories',
+    component: CategoryComponent,
+    meta: { title: 'categories', requiresAuth: true },
+  },
+
+  
 ];
 
 const router = createRouter({
